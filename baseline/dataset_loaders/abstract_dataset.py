@@ -37,15 +37,19 @@ class Dataset:
         return torch.utils.data.DataLoader(self, **generator_params,
                                            pin_memory=pin_memory)
 
-    def get_padded_tensor(self, numpy_waveform):
+    def get_padded_tensor(self, numpy_waveform, start_index=0):
         max_len = numpy_waveform.shape[0]
-        rand_start = 0
-        if self.augment and max_len > self.time_samples:
+        rand_start = start_index
+        if start_index is None and max_len > self.time_samples:
             rand_start = np.random.randint(0, max_len - self.time_samples)
-        tensor_wav = torch.tensor(
-            numpy_waveform[rand_start:rand_start + self.time_samples],
-            dtype=torch.float32)
-        return self.safe_pad(tensor_wav)
+
+        if self.time_samples > 0:
+            tensor_wav = torch.tensor(
+                numpy_waveform[rand_start:rand_start + self.time_samples],
+                dtype=torch.float32)
+            return self.safe_pad(tensor_wav)
+        else:
+            return torch.tensor(numpy_waveform, dtype=torch.float32)
 
     @abstractmethod
     def safe_pad(self, tensor_wav, dtype=torch.float32):
