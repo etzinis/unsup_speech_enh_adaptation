@@ -210,5 +210,75 @@ def test_generator():
         assert sources.shape[:-1] == (batch_size, 3)
         break
 
+    # test that all the fixed sources are working
+    batch_size = 3
+    sample_rate = 8000
+    timelength = 3.0
+    fixed_n_sources = 1
+    split = 'dev'
+    min_or_max = 'min'
+    n_speakers_priors = [0.34, 0.33, 0.33]
+    time_samples = int(sample_rate * timelength)
+    data_loader = Dataset(
+        sample_rate=sample_rate, fixed_n_sources=fixed_n_sources,
+        timelength=timelength, augment='train' in split,
+        zero_pad=True, min_or_max=min_or_max, split=split,
+        normalize_audio=False, n_samples=-1,
+        n_speakers_priors=n_speakers_priors)
+    generator = data_loader.get_generator(
+        batch_size=batch_size, num_workers=1)
+    print(f"Obtained: {len(generator)} files with fixed n_sources: {fixed_n_sources}")
+    for sources, noise in generator:
+        assert not np.allclose(sources[:, 0, :], np.zeros_like(sources[:, 0, :]))
+        assert np.allclose(sources[:, 1, :], np.zeros_like(sources[:, 1, :]))
+        assert np.allclose(sources[:, 2, :], np.zeros_like(sources[:, 2, :]))
+        break
+
+    batch_size = 3
+    sample_rate = 8000
+    timelength = 3.0
+    fixed_n_sources = 2
+    split = 'dev'
+    min_or_max = 'min'
+    n_speakers_priors = [0.34, 0.33, 0.33]
+    time_samples = int(sample_rate * timelength)
+    data_loader = Dataset(
+        sample_rate=sample_rate, fixed_n_sources=fixed_n_sources,
+        timelength=timelength, augment='train' in split,
+        zero_pad=True, min_or_max=min_or_max, split=split,
+        normalize_audio=False, n_samples=-1,
+        n_speakers_priors=n_speakers_priors)
+    generator = data_loader.get_generator(
+        batch_size=batch_size, num_workers=1)
+    print(f"Obtained: {len(generator)} files with fixed n_sources: {fixed_n_sources}")
+    for sources, noise in generator:
+        assert not np.allclose(sources[:, 0, :], np.zeros_like(sources[:, 0, :]))
+        assert not np.allclose(sources[:, 1, :], np.zeros_like(sources[:, 1, :]))
+        assert np.allclose(sources[:, 2, :], np.zeros_like(sources[:, 2, :]))
+        break
+
+    batch_size = 3
+    sample_rate = 8000
+    timelength = 3.0
+    fixed_n_sources = 3
+    split = 'dev'
+    min_or_max = 'min'
+    n_speakers_priors = [0.34, 0.33, 0.33]
+    time_samples = int(sample_rate * timelength)
+    data_loader = Dataset(
+        sample_rate=sample_rate, fixed_n_sources=fixed_n_sources,
+        timelength=timelength, augment='train' in split,
+        zero_pad=True, min_or_max=min_or_max, split=split,
+        normalize_audio=False, n_samples=-1,
+        n_speakers_priors=n_speakers_priors)
+    generator = data_loader.get_generator(
+        batch_size=batch_size, num_workers=1)
+    print(f"Obtained: {len(generator)} files with fixed n_sources: {fixed_n_sources}")
+    for sources, noise in generator:
+        assert not np.allclose(sources[:, 0, :], np.zeros_like(sources[:, 0, :]))
+        assert not np.allclose(sources[:, 1, :], np.zeros_like(sources[:, 1, :]))
+        assert not np.allclose(sources[:, 2, :], np.zeros_like(sources[:, 2, :]))
+        break
+
 if __name__ == "__main__":
     test_generator()
