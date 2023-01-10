@@ -32,6 +32,9 @@ class Dataset(torch.utils.data.Dataset, abstract_dataset.Dataset):
         self.normalize_audio = self.get_arg_and_check_validness(
             'normalize_audio', known_type=bool)
 
+        self.get_only_active_speakers = self.get_arg_and_check_validness(
+            'get_only_active_speakers', known_type=bool)
+
         self.split = self.get_arg_and_check_validness(
             'split', known_type=str, choices=['dev', 'test', 'train'])
 
@@ -52,7 +55,13 @@ class Dataset(torch.utils.data.Dataset, abstract_dataset.Dataset):
 
         self.dataset_dirpath = self.get_path()
 
-        if self.fixed_n_sources < 0:
+        if self.get_only_active_speakers and self.fixed_n_sources < 0:
+            self.available_filenames = []
+            for i in range(1, 4):
+                self.available_filenames += \
+                    [os.path.join(os.path.split(os.path.split(f)[0])[1], os.path.basename(f))
+                     for f in glob2.glob(self.dataset_dirpath + '/' + str(i) + '/*.wav')]
+        elif self.fixed_n_sources < 0:
             self.available_filenames = [
                 os.path.join(os.path.split(os.path.split(f)[0])[1], os.path.basename(f))
                 for f in glob2.glob(self.dataset_dirpath + '/**/*.wav')]
@@ -111,7 +120,7 @@ class Dataset(torch.utils.data.Dataset, abstract_dataset.Dataset):
         if self.augment and max_len > self.time_samples > 0:
             start_index = np.random.randint(0, max_len - self.time_samples)
         mixture_tensor = self.get_padded_tensor(mixture_w - mixture_w.mean(),
-                                              start_index=start_index)
+                                                start_index=start_index)
 
         return mixture_tensor
 
@@ -120,13 +129,14 @@ def test_generator():
     batch_size = 3
     sample_rate = 16000
     timelength = 3.0
-    fixed_n_sources = 2
+    fixed_n_sources = -1
+    get_only_active_speakers = False
     split = 'dev'
     time_samples = int(sample_rate * timelength)
     data_loader = Dataset(
         sample_rate=sample_rate, fixed_n_sources=fixed_n_sources,
         timelength=timelength, augment='train' in split,
-        zero_pad=True, split=split,
+        zero_pad=True, split=split, get_only_active_speakers=get_only_active_speakers,
         normalize_audio=False, n_samples=-1)
     generator = data_loader.get_generator(
         batch_size=batch_size, num_workers=1)
