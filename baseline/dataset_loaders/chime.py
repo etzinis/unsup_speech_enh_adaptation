@@ -1,6 +1,7 @@
 """!
-@brief Pytorch dataloader for Libri2mix dataset.
+@brief Pytorch dataloader for CHiME dataset.
 
+@author Mostafa Sadeghi
 @author Efthymios Tzinis {etzinis2@illinois.edu}
 @copyright University of illinois at Urbana Champaign
 """
@@ -20,11 +21,6 @@ import torchaudio
 class Dataset(torch.utils.data.Dataset, abstract_dataset.Dataset):
     """ Dataset class for the CHiME dataset for one and multi-speaker
     speech enhancement problems.
-
-    Example of kwargs:
-        root_dirpath='/mnt/data/wham', task='enh_single',
-        split='tr', sample_rate=8000, timelength=4.0,
-        normalize_audio=False, n_samples=0, zero_pad=False
     """
     def __init__(self, **kwargs):
         super(Dataset, self).__init__()
@@ -58,13 +54,13 @@ class Dataset(torch.utils.data.Dataset, abstract_dataset.Dataset):
 
         if self.fixed_n_sources < 0:
             self.available_filenames = [
-                os.path.join(os.path.split(os.path.split(f)[0])[1], os.path.basename(f)) for f in
-                glob2.glob(self.dataset_dirpath + '/**/*.wav')]
+                os.path.join(os.path.split(os.path.split(f)[0])[1], os.path.basename(f))
+                for f in glob2.glob(self.dataset_dirpath + '/**/*.wav')]
         else:    
             self.available_filenames = [
-                os.path.join(os.path.split(os.path.split(f)[0])[1], os.path.basename(f)) for f in
-                glob2.glob(self.dataset_dirpath + '/' + str(self.fixed_n_sources) + '/*.wav')]
-            
+                os.path.join(os.path.split(os.path.split(f)[0])[1], os.path.basename(f))
+                for f in glob2.glob(self.dataset_dirpath + '/' + str(self.fixed_n_sources) + '/*.wav')]
+
         # Check that all files are available.
         for fname in self.available_filenames:
             this_path = os.path.join(self.dataset_dirpath, fname)
@@ -124,7 +120,7 @@ def test_generator():
     batch_size = 3
     sample_rate = 16000
     timelength = 3.0
-    fixed_n_sources = -1
+    fixed_n_sources = 2
     split = 'dev'
     time_samples = int(sample_rate * timelength)
     data_loader = Dataset(
