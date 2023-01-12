@@ -128,7 +128,8 @@ class Dataset(torch.utils.data.Dataset, abstract_dataset.Dataset):
         if len(waveform.shape) > 1:
             waveform = waveform.sum(0)
 
-        return waveform - waveform.mean()
+        return waveform
+        # return waveform - waveform.mean()
         # return (1. * waveform - waveform.mean()) / (waveform.std() + 1e-8)
 
     def __len__(self):
