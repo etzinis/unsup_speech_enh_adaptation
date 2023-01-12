@@ -29,7 +29,7 @@ def get_args():
         type=str,
         help="""The dataset(s) used for training.""",
         nargs="+",
-        choices=["libri1to3mix"],
+        choices=["libri1to3mix", "chime"],
     )
     parser.add_argument(
         "--val",
@@ -37,7 +37,7 @@ def get_args():
         help="""The dataset(s) used for validation.""",
         default=["libri1to3mix"],
         nargs="*",
-        choices=["libri1to3mix"],
+        choices=["libri1to3mix", "chime"],
     )
     parser.add_argument(
         "--test",
@@ -45,7 +45,7 @@ def get_args():
         help="""The dataset(s) used for testing.""",
         default=["libri1to3mix"],
         nargs="*",
-        choices=["libri1to3mix"],
+        choices=["libri1to3mix", "chime"],
     )
     parser.add_argument(
         "--audio_timelength",
@@ -106,17 +106,8 @@ def get_args():
 
     parser.add_argument(
         "--student_depth_growth",
-        type=int,
+        type=float,
         help="""The growth factor for the student model for the number of UConv Blocks.""",
-        default=1,
-    )
-
-    parser.add_argument(
-        "--student_width_growth",
-        type=int,
-        help="""The growth factor for the student model for the number of parameters
-        in each UConv Block. If one seeks to significantly increase the parameters,
-        they should increase the width and not the depth.""",
         default=1,
     )
 
@@ -124,15 +115,15 @@ def get_args():
     # Training parameters
     parser.add_argument(
         "--rescale_to_input_mixture",
-        type=bool,
+        action='store_true',
         help="""Rescale the output estimates using the mean and the std of the input mixture.""",
         default=False,
     )
     parser.add_argument(
         "--apply_mixture_consistency",
-        type=bool,
+        action='store_true',
         help="""Use/ no use mixture consistency at the output of the models.""",
-        default=True,
+        default=False,
     )
     parser.add_argument(
         "-bs",
@@ -202,7 +193,7 @@ def get_args():
         "--warmup_checkpoint",
         type=str,
         help="""The absolute path of a pre-trained separation model
-        that will be used for warm start.""",
+        that will be used for warm start for the teacher network.""",
         default=None,
     )
     # ===============================================
