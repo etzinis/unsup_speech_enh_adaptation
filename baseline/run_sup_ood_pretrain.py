@@ -95,7 +95,6 @@ def apply_output_transform(rec_sources_wavs, input_mix_std,
         rec_sources_wavs = mixture_consistency.apply(rec_sources_wavs, input_mom)
     return rec_sources_wavs
 
-
 tr_step = 0
 val_step = 0
 sum_loss = 0.
@@ -123,6 +122,8 @@ for i in range(hparams['n_epochs']):
         input_mix = (input_mix - input_mix_mean) / (input_mix_std + 1e-9)
 
         rec_sources_wavs = model(input_mix)
+        rec_sources_wavs = apply_output_transform(
+            rec_sources_wavs, input_mix_std, input_mix_mean, input_mix, hparams)
         teacher_est_active_speakers = rec_sources_wavs[:, 0:1]
         teacher_est_noises = rec_sources_wavs[:, 1:]
 
@@ -173,6 +174,8 @@ for i in range(hparams['n_epochs']):
                     input_mix = (input_mix - input_mix_mean) / (input_mix_std + 1e-9)
 
                     rec_sources_wavs = model(input_mix)
+                    rec_sources_wavs = apply_output_transform(
+                        rec_sources_wavs, input_mix_std, input_mix_mean, input_mix, hparams)
                     teacher_est_active_speakers = rec_sources_wavs[:, 0:1]
                     teacher_est_noises = rec_sources_wavs[:, 1:]
 
@@ -210,4 +213,4 @@ for i in range(hparams['n_epochs']):
                              f"sup_teacher_epoch_{tr_step}.pt"),
             )
             # Restore the model in the proper device.
-            model = torch.nn.DataParallel(model).cuda()
+            model = model.cuda()
