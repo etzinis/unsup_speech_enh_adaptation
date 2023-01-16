@@ -36,7 +36,7 @@ class Dataset(torch.utils.data.Dataset, abstract_dataset.Dataset):
             'get_only_active_speakers', known_type=bool)
 
         self.split = self.get_arg_and_check_validness(
-            'split', known_type=str, choices=['dev', 'test', 'train'])
+            'split', known_type=str, choices=['dev', 'eval', 'train'])
 
         self.n_samples = self.get_arg_and_check_validness(
             'n_samples', known_type=int, extra_lambda_checks=[lambda x: x >= -1])
@@ -131,7 +131,7 @@ def test_generator():
     timelength = 3.0
     fixed_n_sources = -1
     get_only_active_speakers = False
-    split = 'dev'
+    split = 'eval'
     time_samples = int(sample_rate * timelength)
     data_loader = Dataset(
         sample_rate=sample_rate, fixed_n_sources=fixed_n_sources,
@@ -145,6 +145,7 @@ def test_generator():
         print(mixture.shape)
         assert mixture.shape == (batch_size, time_samples)
         break
+    print(len(generator))
 
 if __name__ == "__main__":
     test_generator()
