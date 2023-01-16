@@ -238,7 +238,9 @@ for i in range(hparams['n_epochs']):
     student_step += 1
 
     for val_d_name in [x for x in generators if not x == 'train']:
-        if generators[val_d_name] is not None and val_set in ['val_chime_1sp', 'test_chime_1sp']:
+        if generators[val_d_name] is None:
+            continue
+        if val_d_name in ['val_chime_1sp', 'test_chime_1sp']:
             student.eval()
             with torch.no_grad():
                 for mixture in tqdm(generators[val_d_name],
@@ -271,8 +273,32 @@ for i in range(hparams['n_epochs']):
                     input_mix.detach(),
                     experiment, step=val_step, tag=f"{val_d_name}_stud_{student_order}",
                     max_batch_items=4)
+        else:
+            student.eval()
+            with torch.no_grad():
+                for speakers, noise in tqdm(generators[val_d_name],
+                                            desc='Validation on {}'.format(val_d_name)):
+                    gt_speaker_mix = speakers.sum(1, keepdims=True).cuda()
+                    noise = noise.cuda()
 
-    pprint(res_dic)
+                    input_mix = noise + gt_speaker_mix
+                    input_mix_std = input_mix.std(-1, keepdim=True)
+                    input_mix_mean = input_mix.mean(-1, keepdim=True)
+                    input_mix = (input_mix - input_mix_mean) / (input_mix_std + 1e-9)
+
+                    rec_sources_wavs = student(input_mix)
+                    rec_sources_wavs = apply_output_transform(
+                        rec_sources_wavs, input_mix_std, input_mix_mean, input_mix, hparams)
+                    teacher_est_active_speakers = rec_sources_wavs[:, 0:1]
+                    teacher_est_noises = rec_sources_wavs[:, 1:]
+
+                    sisdr = - pairwise_neg_sisdr(
+                        teacher_est_active_speakers, gt_speaker_mix).detach().cpu()
+                    mix_sisdr = sisdr + pairwise_neg_sisdr(
+                        input_mix, gt_speaker_mix).detach().cpu()
+                    res_dic[val_d_name]['sisdr']['acc'] += sisdr.tolist()
+                    res_dic[val_d_name]['sisdri']['acc'] += mix_sisdr.tolist()
+
     val_step += 1
 
     res_dic = cometml_logger.report_losses_mean_and_std(
@@ -293,6 +319,3 @@ for i in range(hparams['n_epochs']):
             )
             # Restore the model in the proper device.
             student = student.cuda()
-
-
-

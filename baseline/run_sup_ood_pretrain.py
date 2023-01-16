@@ -104,7 +104,7 @@ for i in range(hparams['n_epochs']):
         res_dic[d_name] = {}
         for loss_name in val_losses[d_name]:
             res_dic[d_name][loss_name] = {'mean': 0., 'std': 0., 'acc': []}
-    print("Sup. teacher Sudo-RM-RF: {} - {} || Epoch: {}/{}".format(
+    print("Supervised teacher Sudo-RM RF: {} - {} || Epoch: {}/{}".format(
         experiment.get_key(), experiment.get_tags(), i + 1,
         hparams['n_epochs']))
     model.train()
