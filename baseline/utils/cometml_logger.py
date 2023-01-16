@@ -43,6 +43,31 @@ class AudioLogger(object):
                                      metadata=None, overwrite=True,
                                      copy_to_tmp=True, step=step)
 
+    def log_sp_enh_no_gt_batch(self,
+                               pr_speaker, pr_noise,
+                               mix_batch,
+                               experiment,
+                               tag='',
+                               step=None,
+                               max_batch_items=4):
+        print('Logging audio online...\n')
+
+        tensors_with_names = zip(
+            [pr_speaker, pr_noise, mix_batch],
+            ["est_speaker", "est_noise", "mixture"]
+        )
+
+        for tensor_waveform, name in tensors_with_names:
+            waveform = tensor_waveform.detach().cpu().numpy()
+            waveform = waveform / np.abs(waveform).max(-1, keepdims=True)
+
+            for b_ind in range(min(waveform.shape[0], max_batch_items)):
+                experiment.log_audio(waveform[b_ind].squeeze(),
+                                     sample_rate=self.fs,
+                                     file_name=tag+'batch_{}_{}'.format(b_ind+1, name),
+                                     metadata=None, overwrite=True,
+                                     copy_to_tmp=True, step=step)
+
     def log_batch(self,
                   pr_batch,
                   t_batch,
