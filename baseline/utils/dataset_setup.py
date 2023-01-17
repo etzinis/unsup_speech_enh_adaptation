@@ -88,18 +88,32 @@ def supervised_setup(hparams):
                 generators[this_dataset_name] = data_loader.get_generator(
                     batch_size=hparams['batch_size'], num_workers=hparams['n_jobs'])
             else:
-                # This is only for validation and testing
-                for fixed_n_sources in [1, 2, 3]:
-                    data_loader = create_loader_for_simple_dataset(
-                        dataset_name=dataset_name,
-                        hparams=hparams,
-                        fixed_n_sources=fixed_n_sources,
-                        n_speakers_priors=[0.34, 0.33, 0.33],
-                        split=data_split)
+                if dataset_name == 'chime':
+                    for fixed_n_sources in [1]:
+                        data_loader = create_loader_for_simple_dataset(
+                            dataset_name=dataset_name,
+                            hparams=hparams,
+                            fixed_n_sources=fixed_n_sources,
+                            get_only_active_speakers=False,
+                            split=data_split,
+                            n_samples=250)
 
-                    this_dataset_name = f"{data_split}_{dataset_name}_{fixed_n_sources}sp"
-                    generators[this_dataset_name] = data_loader.get_generator(
-                        batch_size=hparams['batch_size'], num_workers=hparams['n_jobs'])
+                        this_dataset_name = f"{data_split}_{dataset_name}_{fixed_n_sources}sp"
+                        generators[this_dataset_name] = data_loader.get_generator(
+                            batch_size=hparams['batch_size'], num_workers=hparams['n_jobs'])
+                else:
+                    # non-chime
+                    for fixed_n_sources in [1, 2, 3]:
+                        data_loader = create_loader_for_simple_dataset(
+                            dataset_name=dataset_name,
+                            hparams=hparams,
+                            fixed_n_sources=fixed_n_sources,
+                            n_speakers_priors=[0.34, 0.33, 0.33],
+                            split=data_split)
+
+                        this_dataset_name = f"{data_split}_{dataset_name}_{fixed_n_sources}sp"
+                        generators[this_dataset_name] = data_loader.get_generator(
+                            batch_size=hparams['batch_size'], num_workers=hparams['n_jobs'])
 
     return generators
 
@@ -133,7 +147,7 @@ def unsupervised_setup(hparams):
                             fixed_n_sources=fixed_n_sources,
                             get_only_active_speakers=False,
                             split=data_split,
-                            n_samples=150)
+                            n_samples=250)
 
                         this_dataset_name = f"{data_split}_{dataset_name}_{fixed_n_sources}sp"
                         generators[this_dataset_name] = data_loader.get_generator(
