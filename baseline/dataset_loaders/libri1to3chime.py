@@ -196,10 +196,21 @@ class Dataset(torch.utils.data.Dataset, abstract_dataset.Dataset):
 
         sources_tensor = torch.stack(src_tensor_list, 0)
 
-        return sources_tensor, noise_tensor.unsqueeze(0)
+        # Mix the speaker mix with noise at a random input-SNR
+        speaker_mix = sources_tensor.sum(0)
+        if not self.augment:
+            np.random.seed(len(self.split) + idx)
+        sampled_input_snr = np.random.uniform(-5., 15.)
+        new_speaker_mix_tensor, new_noise_tensor = self.mix_2_with_specified_snr(
+            speaker_mix, noise_tensor, snr_ratio=sampled_input_snr)
+
+        return new_speaker_mix_tensor.unsqueeze(0), new_noise_tensor.unsqueeze(0)
 
 
 def test_generator():
+    def get_snr(tensor_1, tensor_2):
+        return 10. * torch.log10((tensor_1**2).sum(-1) / ((tensor_2**2).sum(-1) + 1e-9))
+
     batch_size = 3
     sample_rate = 16000
     timelength = 3.0
@@ -220,8 +231,9 @@ def test_generator():
     for sources, noise in generator:
         print(sources.shape)
         print(noise.shape)
+        print("Input-SNRs", get_snr(sources, noise))
         assert noise.shape == (batch_size, 1, time_samples)
-        assert sources.shape == (batch_size, 3, time_samples)
+        assert sources.shape == (batch_size, 1, time_samples)
         break
 
     # test the testing set with batch size 1 only
@@ -245,8 +257,9 @@ def test_generator():
     for sources, noise in generator:
         print(sources.shape)
         print(noise.shape)
+        print("Input-SNRs", get_snr(sources, noise))
         assert noise.shape[:-1] == (batch_size, 1)
-        assert sources.shape[:-1] == (batch_size, 3)
+        assert sources.shape[:-1] == (batch_size, 1)
         break
 
 if __name__ == "__main__":
