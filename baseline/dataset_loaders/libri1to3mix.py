@@ -144,15 +144,13 @@ class Dataset(torch.utils.data.Dataset, abstract_dataset.Dataset):
         start_index = 0
         if self.augment and max_len > self.time_samples > 0:
             start_index = np.random.randint(0, max_len - self.time_samples)
-        noise_tensor = self.get_padded_tensor(noise_w - noise_w.mean(),
-                                              start_index=start_index)
+        noise_tensor = self.get_padded_tensor(noise_w, start_index=start_index)
 
         src_tensor_list = []
         for src_idx in range(3):
             if src_idx + 1 <= file_info['n_active_sources']:
                 src_w = self.wavread(file_info['sources_paths'][src_idx])
-                source_tensor = self.get_padded_tensor(
-                    src_w - src_w.mean(), start_index=start_index)
+                source_tensor = self.get_padded_tensor(src_w, start_index=start_index)
             else:
                 source_tensor = torch.zeros_like(noise_tensor)
             src_tensor_list.append(source_tensor)
