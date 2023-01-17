@@ -160,7 +160,7 @@ for i in range(hparams['n_epochs']):
         res_dic['train_total']['sisdr']['acc'] += [- l.detach().cpu()]
         res_dic['train_speaker']['sisdr']['acc'] += [- speaker_l.detach().cpu()]
         res_dic['train_noise']['sisdr']['acc'] += [- noise_l.detach().cpu()]
-        break
+
     if hparams['patience'] > 0:
         if tr_step % hparams['patience'] == 0:
             new_lr = (hparams['learning_rate'] / (hparams['divide_lr_by'] ** (
@@ -226,7 +226,7 @@ for i in range(hparams['n_epochs']):
                         input_mix, gt_speaker_mix).detach().cpu()
                     res_dic[val_d_name]['sisdr']['acc'] += sisdr.tolist()
                     res_dic[val_d_name]['sisdri']['acc'] += mix_sisdr.tolist()
-                    break
+
             if hparams["log_audio"]:
                 audio_logger.log_sp_enh_batch(
                     teacher_est_active_speakers.detach(),
