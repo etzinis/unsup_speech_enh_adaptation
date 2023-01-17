@@ -22,11 +22,11 @@ import baseline.utils.mixture_consistency as mixture_consistency
 import baseline.models.improved_sudormrf as improved_sudormrf
 import baseline.metrics.dnnmos_metric as dnnmos_metric
 from asteroid.losses import pairwise_neg_sisdr
-from multiprocessing import Process, Manager
+from multiprocessing import Pool
 
 
-def compute_dnsmos_process(est_speech, proc_id, results_dictionary):
-    results_dictionary[proc_id] = dnnmos_metric.compute_dnsmos(est_speech, fs=16000)
+def compute_dnsmos_process(est_speech):
+    return dnnmos_metric.compute_dnsmos(est_speech, fs=16000)
 
 
 args = parser.get_args()
@@ -160,7 +160,7 @@ for i in range(hparams['n_epochs']):
         res_dic['train_total']['sisdr']['acc'] += [- l.detach().cpu()]
         res_dic['train_speaker']['sisdr']['acc'] += [- speaker_l.detach().cpu()]
         res_dic['train_noise']['sisdr']['acc'] += [- noise_l.detach().cpu()]
-
+        break
     if hparams['patience'] > 0:
         if tr_step % hparams['patience'] == 0:
             new_lr = (hparams['learning_rate'] / (hparams['divide_lr_by'] ** (
@@ -195,20 +195,12 @@ for i in range(hparams['n_epochs']):
                     s_est_speech = student_estimates[:, 0].detach().cpu().numpy()
 
                     # Parallelize the DNS-MOS computation.
-                    manager = Manager()
-                    return_dict = manager.dict()
-                    processes = [Process(target=compute_dnsmos_process,
-                                         args=(s_est_speech[b_ind], b_ind, return_dict))
-                                 for b_ind in range(s_est_speech.shape[0])]
-                    for process in processes:
-                        process.start()
-                    # wait for all processes to complete
-                    for process in processes:
-                        process.join()
-                    # Update the actual results dictionary
-                    for p_id, dnsmos_values in return_dict.items():
-                        for k1, v1 in dnsmos_values.items():
-                            res_dic[val_d_name][k1]['acc'].append(v1)
+                    with Pool(max(hparams['n_jobs'] // 4, 1)) as p:
+                        args_list = [s_est_speech[b_ind]
+                                     for b_ind in range(s_est_speech.shape[0])]
+                        for dnsmos_values in p.map(compute_dnsmos_process, args_list):
+                            for k1, v1 in dnsmos_values.items():
+                                res_dic[val_d_name][k1]['acc'].append(v1)
         else:
             model.eval()
             with torch.no_grad():
@@ -234,7 +226,7 @@ for i in range(hparams['n_epochs']):
                         input_mix, gt_speaker_mix).detach().cpu()
                     res_dic[val_d_name]['sisdr']['acc'] += sisdr.tolist()
                     res_dic[val_d_name]['sisdri']['acc'] += mix_sisdr.tolist()
-
+                    break
             if hparams["log_audio"]:
                 audio_logger.log_sp_enh_batch(
                     teacher_est_active_speakers.detach(),

@@ -27,7 +27,7 @@ import baseline.utils.mixture_consistency as mixture_consistency
 
 import baseline.models.improved_sudormrf as improved_sudormrf
 import baseline.metrics.dnnmos_metric as dnnmos_metric
-from multiprocessing import Process, Manager
+from multiprocessing import Pool
 
 from asteroid.losses import pairwise_neg_sisdr
 from asteroid.losses import pairwise_neg_snr
@@ -70,8 +70,8 @@ def normalize_waveform(x):
     return (x - x.mean(-1, keepdim=True)) / (x.std(-1, keepdim=True) + 1e-9)
 
 
-def compute_dnsmos_process(est_speech, proc_id, results_dictionary):
-    results_dictionary[proc_id] = dnnmos_metric.compute_dnsmos(est_speech, fs=16000)
+def compute_dnsmos_process(est_speech):
+    return dnnmos_metric.compute_dnsmos(est_speech, fs=16000)
 
 
 audio_logger = cometml_logger.AudioLogger(fs=hparams["fs"], n_sources=2)
@@ -267,20 +267,12 @@ for i in range(hparams['n_epochs']):
                     s_est_speech = student_estimates[:, 0].detach().cpu().numpy()
 
                     # Parallelize the DNS-MOS computation.
-                    manager = Manager()
-                    return_dict = manager.dict()
-                    processes = [Process(target=compute_dnsmos_process,
-                                         args=(s_est_speech[b_ind], b_ind, return_dict))
-                                 for b_ind in range(s_est_speech.shape[0])]
-                    for process in processes:
-                        process.start()
-                    # wait for all processes to complete
-                    for process in processes:
-                        process.join()
-                    # Update the actual results dictionary
-                    for p_id, dnsmos_values in return_dict.items():
-                        for k1, v1 in dnsmos_values.items():
-                            res_dic[val_d_name][k1]['acc'].append(v1)
+                    with Pool(max(hparams['n_jobs'] // 4, 1)) as p:
+                        args_list = [s_est_speech[b_ind]
+                                     for b_ind in range(s_est_speech.shape[0])]
+                        for dnsmos_values in p.map(compute_dnsmos_process, args_list):
+                            for k1, v1 in dnsmos_values.items():
+                                res_dic[val_d_name][k1]['acc'].append(v1)
 
             if hparams["log_audio"]:
                 audio_logger.log_sp_enh_no_gt_batch(
