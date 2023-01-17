@@ -19,9 +19,15 @@ import baseline.utils.cmd_parser as parser
 import baseline.utils.cometml_logger as cometml_logger
 import baseline.utils.dataset_setup as dataset_setup
 import baseline.utils.mixture_consistency as mixture_consistency
-
 import baseline.models.improved_sudormrf as improved_sudormrf
+import baseline.metrics.dnnmos_metric as dnnmos_metric
 from asteroid.losses import pairwise_neg_sisdr
+from multiprocessing import Process, Manager
+
+
+def compute_dnsmos_process(est_speech, proc_id, results_dictionary):
+    results_dictionary[proc_id] = dnnmos_metric.compute_dnsmos(est_speech, fs=16000)
+
 
 args = parser.get_args()
 hparams = vars(args)
@@ -63,10 +69,16 @@ val_losses = {
 for val_set in [x for x in generators if not x == 'train']:
     if generators[val_set] is None:
         continue
-    val_losses[val_set] = {
-        "sisdr": pairwise_neg_sisdr,
-        "sisdri": pairwise_neg_sisdr
-    }
+    if val_set in ['val_chime_1sp', 'test_chime_1sp']:
+        val_losses[val_set] = {
+            "sig_mos": None,
+            "bak_mos": None,
+            "ovr_mos": None,
+        }
+    else:
+        val_losses[val_set] = {
+            "sisdr": pairwise_neg_sisdr, "sisdri": pairwise_neg_sisdr
+        }
 
 model = improved_sudormrf.SuDORMRF(out_channels=hparams['out_channels'],
                                    in_channels=hparams['in_channels'],
@@ -149,7 +161,6 @@ for i in range(hparams['n_epochs']):
         res_dic['train_speaker']['sisdr']['acc'] += [- speaker_l.detach().cpu()]
         res_dic['train_noise']['sisdr']['acc'] += [- noise_l.detach().cpu()]
 
-#     # lr_scheduler.step(res_dic['val_SISDRi']['mean'])
     if hparams['patience'] > 0:
         if tr_step % hparams['patience'] == 0:
             new_lr = (hparams['learning_rate'] / (hparams['divide_lr_by'] ** (
@@ -160,7 +171,45 @@ for i in range(hparams['n_epochs']):
     tr_step += 1
 
     for val_d_name in [x for x in generators if not x == 'train']:
-        if generators[val_d_name] is not None:
+        if generators[val_d_name] is None:
+            continue
+        if val_d_name in ['val_chime_1sp', 'test_chime_1sp']:
+            model.eval()
+            with torch.no_grad():
+                for mixture in tqdm(generators[val_d_name],
+                                    desc='Validation on {}'.format(val_d_name)):
+                    input_mix = mixture.unsqueeze(1).cuda()
+
+                    input_mix_std = input_mix.std(-1, keepdim=True)
+                    input_mix_mean = input_mix.mean(-1, keepdim=True)
+                    input_mix = (input_mix - input_mix_mean) / (input_mix_std + 1e-9)
+
+                    student_estimates = model(input_mix)
+                    student_estimates = apply_output_transform(
+                        student_estimates, input_mix_std, input_mix_mean,
+                        input_mix, hparams)
+                    new_mix = student_estimates[:, 0:1] + student_estimates[:, 1:]
+                    new_mix_std = new_mix.std(-1, keepdim=True)
+                    new_mix_mean = new_mix.mean(-1, keepdim=True)
+                    student_estimates = (student_estimates - new_mix_mean) / (new_mix_std + 1e-9)
+                    s_est_speech = student_estimates[:, 0].detach().cpu().numpy()
+
+                    # Parallelize the DNS-MOS computation.
+                    manager = Manager()
+                    return_dict = manager.dict()
+                    processes = [Process(target=compute_dnsmos_process,
+                                         args=(s_est_speech[b_ind], b_ind, return_dict))
+                                 for b_ind in range(s_est_speech.shape[0])]
+                    for process in processes:
+                        process.start()
+                    # wait for all processes to complete
+                    for process in processes:
+                        process.join()
+                    # Update the actual results dictionary
+                    for p_id, dnsmos_values in return_dict.items():
+                        for k1, v1 in dnsmos_values.items():
+                            res_dic[val_d_name][k1]['acc'].append(v1)
+        else:
             model.eval()
             with torch.no_grad():
                 for speakers, noise in tqdm(generators[val_d_name],
