@@ -29,7 +29,7 @@ def get_args():
         type=str,
         help="""The dataset(s) used for training.""",
         nargs="+",
-        choices=["libri1to3mix", "chime"],
+        choices=["libri1to3mix", "chime", "reverb_libri1to3mix"],
     )
     parser.add_argument(
         "--val",
@@ -37,7 +37,7 @@ def get_args():
         help="""The dataset(s) used for validation.""",
         default=["libri1to3mix"],
         nargs="*",
-        choices=["libri1to3mix", "chime", "libri1to3chime"],
+        choices=["libri1to3mix", "chime", "libri1to3chime", "reverb_libri1to3mix"],
     )
     parser.add_argument(
         "--test",
@@ -45,7 +45,7 @@ def get_args():
         help="""The dataset(s) used for testing.""",
         default=["libri1to3mix"],
         nargs="*",
-        choices=["libri1to3mix", "chime", "libri1to3chime"],
+        choices=["libri1to3mix", "chime", "libri1to3chime", "reverb_libri1to3mix"],
     )
     parser.add_argument(
         "--audio_timelength",

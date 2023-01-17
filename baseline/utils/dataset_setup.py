@@ -6,6 +6,7 @@
 """
 
 import baseline.dataset_loaders.libri1to3mix as libri1to3mix
+import baseline.dataset_loaders.reverb_libri1to3mix as reverb_libri1to3mix
 import baseline.dataset_loaders.libri1to3chime as libri1to3chime
 import baseline.dataset_loaders.chime as chime
 
@@ -25,6 +26,20 @@ def create_loader_for_simple_dataset(dataset_name=None,
         else:
             this_dataset_split = split
         data_loader = libri1to3mix.Dataset(
+            sample_rate=hparams['fs'], fixed_n_sources=fixed_n_sources,
+            timelength=hparams['audio_timelength'],
+            augment='train' in split, zero_pad=True,
+            min_or_max=hparams['min_or_max'], split=this_dataset_split,
+            normalize_audio=False, n_samples=n_samples,
+            n_speakers_priors=n_speakers_priors)
+    elif dataset_name == 'reverb_libri1to3mix':
+        if split == "train":
+            this_dataset_split = "train-360"
+        elif split == "val":
+            this_dataset_split = "dev"
+        else:
+            this_dataset_split = split
+        data_loader = reverb_libri1to3mix.Dataset(
             sample_rate=hparams['fs'], fixed_n_sources=fixed_n_sources,
             timelength=hparams['audio_timelength'],
             augment='train' in split, zero_pad=True,
