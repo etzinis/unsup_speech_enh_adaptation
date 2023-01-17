@@ -1,5 +1,5 @@
 """!
-@brief Pytorch dataloader for Libri2mix dataset.
+@brief Pytorch dataloader for Libri1to3chime dataset with reverb augmentation.
 
 @author Efthymios Tzinis {etzinis2@illinois.edu}
 @copyright University of illinois at Urbana Champaign
@@ -14,16 +14,12 @@ import glob2
 import baseline.dataset_loaders.abstract_dataset as abstract_dataset
 from __config__ import LIBRI3MIX_ROOT_PATH
 import torchaudio
+import pyroomacoustics as pra
 
 
 class Dataset(torch.utils.data.Dataset, abstract_dataset.Dataset):
     """ Dataset class for Librimix  1 to 3 for one and multi-speaker
-    speech enhancement problems.
-
-    Example of kwargs:
-        root_dirpath='/mnt/data/wham', task='enh_single',
-        split='tr', sample_rate=8000, timelength=4.0,
-        normalize_audio=False, n_samples=0, zero_pad=False
+    speech enhancement problems with the addition of reverb.
     """
     def __init__(self, **kwargs):
         super(Dataset, self).__init__()
@@ -62,6 +58,13 @@ class Dataset(torch.utils.data.Dataset, abstract_dataset.Dataset):
 
         self.sample_rate = self.get_arg_and_check_validness(
             'sample_rate', known_type=int, choices=[8000, 16000])
+
+        self.room_l_region = [9., 11.]
+        self.room_w_region = [9., 11.]
+        self.room_h_region = [2.6, 3.5]
+        self.rt60_region = [0.15, 0.4]
+        self.distance_region = [0.1, 3.]
+        self.source_h_region = [0.5, 2.5]
 
         self.dataset_dirpath = self.get_path()
 
@@ -135,11 +138,59 @@ class Dataset(torch.utils.data.Dataset, abstract_dataset.Dataset):
     def __len__(self):
         return self.n_samples
 
+    def sample_room_parameters(self):
+        room_params = {
+            "length": np.random.uniform(self.room_l_region[0], self.room_l_region[1]),
+            "width": np.random.uniform(self.room_w_region[0], self.room_w_region[1]),
+            "height": np.random.uniform(self.room_h_region[0], self.room_h_region[1]),
+            "rt60": np.random.uniform(self.rt60_region[0], self.rt60_region[1]),
+        }
+        return room_params
+
+    def simulate_a_source_in_a_room(self, waveform, room_params):
+        # Online room simulation copied and modified from:
+        # https://github.com/etzinis/heterogeneous_separation/blob/main/heterogeneous_separation/dataset_loader/spatial_librispeech.py
+        room_dims = [room_params["length"], room_params["width"], room_params["height"]]
+        e_absorption, max_order = pra.inverse_sabine(room_params["rt60"], room_dims)
+        room = pra.ShoeBox(
+            room_dims, fs=int(self.sample_rate), materials=pra.Material(e_absorption),
+            max_order=max_order
+        )
+
+        # Put the microphone in the middle of the room
+        mic_loc_x = room_params["length"] / 2.
+        mic_loc_y = room_params["width"] / 2.
+        mic_loc_z = room_params["height"] / 2.
+        mic_locs = np.c_[[mic_loc_x, mic_loc_y, mic_loc_z],]
+        room.add_microphone_array(mic_locs)
+
+        theta = np.random.uniform(0, np.pi)
+        dist = np.random.uniform(self.distance_region[0], self.distance_region[-1])
+
+        source_x_loc = np.cos(theta) * dist + mic_loc_x
+        source_y_loc = np.sin(theta) * dist + mic_loc_y
+        # A random speaker height sampling
+        source_z_loc = np.random.uniform(self.source_h_region[0],
+                                         self.source_h_region[-1])
+
+        room.add_source([source_x_loc, source_y_loc, source_z_loc],
+                        signal=waveform, delay=0.0)
+        room.simulate()
+
+        return room.mic_array.signals[-1, :]
+
     def __getitem__(self, idx):
         file_info = self.available_filenames_dic[idx]
 
+        # Sample the room parameters
+        if not self.augment:
+            np.random.seed(len(self.split) + idx)
+        room_params = self.sample_room_parameters()
+
         noise_w = self.wavread(file_info['noise_path'])
         max_len = noise_w.shape[-1]
+        noise_w = self.simulate_a_source_in_a_room(noise_w.numpy(), room_params)
+        noise_w = noise_w[:max_len]
 
         start_index = 0
         if self.augment and max_len > self.time_samples > 0:
@@ -150,6 +201,8 @@ class Dataset(torch.utils.data.Dataset, abstract_dataset.Dataset):
         for src_idx in range(3):
             if src_idx + 1 <= file_info['n_active_sources']:
                 src_w = self.wavread(file_info['sources_paths'][src_idx])
+                src_w = self.simulate_a_source_in_a_room(src_w.numpy(), room_params)
+                src_w = src_w[:max_len]
                 source_tensor = self.get_padded_tensor(src_w, start_index=start_index)
             else:
                 source_tensor = torch.zeros_like(noise_tensor)
