@@ -59,10 +59,10 @@ class Dataset(torch.utils.data.Dataset, abstract_dataset.Dataset):
         self.sample_rate = self.get_arg_and_check_validness(
             'sample_rate', known_type=int, choices=[8000, 16000])
 
-        self.room_l_region = [9., 11.]
-        self.room_w_region = [9., 11.]
+        self.room_l_region = [8., 10.]
+        self.room_w_region = [7., 10.]
         self.room_h_region = [2.6, 3.5]
-        self.rt60_region = [0.15, 0.4]
+        self.rt60_region = [0.175, 0.45]
         self.distance_region = [0.1, 3.]
         self.source_h_region = [0.5, 2.5]
 
