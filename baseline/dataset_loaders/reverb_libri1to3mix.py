@@ -189,8 +189,6 @@ class Dataset(torch.utils.data.Dataset, abstract_dataset.Dataset):
 
         noise_w = self.wavread(file_info['noise_path'])
         max_len = noise_w.shape[-1]
-        noise_w = self.simulate_a_source_in_a_room(noise_w.numpy(), room_params)
-        noise_w = noise_w[:max_len]
 
         start_index = 0
         if self.augment and max_len > self.time_samples > 0:
