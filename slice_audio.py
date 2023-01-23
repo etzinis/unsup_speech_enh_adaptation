@@ -53,13 +53,16 @@ def main():
     # search for audio files
     files = []
     for file in os.listdir(data_dir):
-        if file.endswith('.wav'):
+        if file.endswith('.wav') and 'CH' not in file:
             files.append(os.path.join(file))
 
     # slice audio into chunks
     for file in tqdm(files):
         # load audio
         audio, sr = sf.read(os.path.join(data_dir, file))
+
+        # Extract only the left channel.
+        audio = audio[:, 1:]
         
         # load brouhaha results
         if args.brouhaha_vad_snr is not None:
