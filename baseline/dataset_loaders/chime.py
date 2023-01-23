@@ -55,6 +55,10 @@ class Dataset(torch.utils.data.Dataset, abstract_dataset.Dataset):
 
         self.dataset_dirpath = self.get_path()
 
+        if self.split == 'train':
+            self.available_filenames = [
+                os.path.join(os.path.split(os.path.split(f)[0])[1], os.path.basename(f))
+                for f in glob2.glob(self.dataset_dirpath + '/consec_segments_10sec_processed/*.wav')]
         if self.get_only_active_speakers and self.fixed_n_sources < 0:
             self.available_filenames = []
             for i in range(1, 4):
@@ -126,12 +130,12 @@ class Dataset(torch.utils.data.Dataset, abstract_dataset.Dataset):
 
 
 def test_generator():
-    batch_size = 3
+    batch_size = 4
     sample_rate = 16000
     timelength = 3.0
     fixed_n_sources = -1
     get_only_active_speakers = False
-    split = 'eval'
+    split = 'train'
     time_samples = int(sample_rate * timelength)
     data_loader = Dataset(
         sample_rate=sample_rate, fixed_n_sources=fixed_n_sources,
