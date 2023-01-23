@@ -173,6 +173,8 @@ for i in range(hparams['n_epochs']):
     for val_d_name in [x for x in generators if not x == 'train']:
         if generators[val_d_name] is None:
             continue
+        if hparams["save_models_every"] > 0 and not tr_step % hparams["save_models_every"] == 0:
+            continue
         if val_d_name in ['val_chime_1sp', 'test_chime_1sp']:
             model.eval()
             with torch.no_grad():
@@ -238,13 +240,18 @@ for i in range(hparams['n_epochs']):
 
     val_step += 1
 
-    res_dic = cometml_logger.report_losses_mean_and_std(
-        res_dic, experiment, tr_step, val_step)
+    if hparams["save_models_every"] > 0 and not tr_step % hparams["save_models_every"] == 0:
+        for d_name in res_dic:
+            for loss_name in res_dic[d_name]:
+                res_dic[d_name][loss_name]['acc'] = []
+    else:
+        res_dic = cometml_logger.report_losses_mean_and_std(
+            res_dic, experiment, tr_step, val_step)
 
-    for d_name in res_dic:
-        for loss_name in res_dic[d_name]:
-            res_dic[d_name][loss_name]['acc'] = []
-    pprint(res_dic)
+        for d_name in res_dic:
+            for loss_name in res_dic[d_name]:
+                res_dic[d_name][loss_name]['acc'] = []
+        pprint(res_dic)
 
     if hparams["save_models_every"] > 0:
         if tr_step % hparams["save_models_every"] == 0:
