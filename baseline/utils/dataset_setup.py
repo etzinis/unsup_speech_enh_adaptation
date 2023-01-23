@@ -69,7 +69,7 @@ def create_loader_for_simple_dataset(dataset_name=None,
         data_loader = chime.Dataset(
             sample_rate=hparams['fs'], fixed_n_sources=fixed_n_sources,
             timelength=hparams['audio_timelength'],
-            augment='train' in split, zero_pad=True,
+            augment='train' in split, zero_pad=True, use_vad=hparams['use_vad'],
             get_only_active_speakers=get_only_active_speakers, split=this_dataset_split,
             normalize_audio=False, n_samples=n_samples)
     else:

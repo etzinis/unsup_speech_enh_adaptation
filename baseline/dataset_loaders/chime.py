@@ -32,6 +32,9 @@ class Dataset(torch.utils.data.Dataset, abstract_dataset.Dataset):
         self.normalize_audio = self.get_arg_and_check_validness(
             'normalize_audio', known_type=bool)
 
+        self.use_vad = self.get_arg_and_check_validness(
+            'use_vad', known_type=bool)
+
         self.get_only_active_speakers = self.get_arg_and_check_validness(
             'get_only_active_speakers', known_type=bool)
 
@@ -55,11 +58,15 @@ class Dataset(torch.utils.data.Dataset, abstract_dataset.Dataset):
 
         self.dataset_dirpath = self.get_path()
 
-        if self.split == 'train':
+        if self.split == 'train' and not self.use_vad:
             self.available_filenames = [
                 os.path.join(os.path.split(os.path.split(f)[0])[1], os.path.basename(f))
-                for f in glob2.glob(self.dataset_dirpath + '/consec_segments_10sec_processed/*.wav')]
-        if self.get_only_active_speakers and self.fixed_n_sources < 0:
+                for f in glob2.glob(self.dataset_dirpath + '/unlabeled_10s/*.wav')]
+        elif self.split == 'train' and self.use_vad:
+            self.available_filenames = [
+                os.path.join(os.path.split(os.path.split(f)[0])[1], os.path.basename(f))
+                for f in glob2.glob(self.dataset_dirpath + '/unlabeled_vad_10s/*.wav')]
+        elif self.get_only_active_speakers and self.fixed_n_sources < 0:
             self.available_filenames = []
             for i in range(1, 4):
                 self.available_filenames += \
@@ -130,16 +137,17 @@ class Dataset(torch.utils.data.Dataset, abstract_dataset.Dataset):
 
 
 def test_generator():
-    batch_size = 4
+    batch_size = 1
     sample_rate = 16000
     timelength = 3.0
     fixed_n_sources = -1
+    use_vad = False
     get_only_active_speakers = False
     split = 'train'
     time_samples = int(sample_rate * timelength)
     data_loader = Dataset(
         sample_rate=sample_rate, fixed_n_sources=fixed_n_sources,
-        timelength=timelength, augment='train' in split,
+        timelength=timelength, augment='train' in split, use_vad=use_vad,
         zero_pad=True, split=split, get_only_active_speakers=get_only_active_speakers,
         normalize_audio=False, n_samples=-1)
     generator = data_loader.get_generator(
@@ -149,7 +157,7 @@ def test_generator():
         print(mixture.shape)
         assert mixture.shape == (batch_size, time_samples)
         break
-    print(len(generator))
+
 
 if __name__ == "__main__":
     test_generator()

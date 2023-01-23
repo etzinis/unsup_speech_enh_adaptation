@@ -62,6 +62,13 @@ def get_args():
         default=0.34,
     )
     parser.add_argument(
+        "--use_vad",
+        action='store_true',
+        help="""Use the output of the VAD model to get only active speaker segments when training with the CHiME 
+        data.""",
+        default=False,
+    )
+    parser.add_argument(
         "-fs", type=int, help="""Sampling rate of the audio.""", default=16000
     )
     parser.add_argument(
