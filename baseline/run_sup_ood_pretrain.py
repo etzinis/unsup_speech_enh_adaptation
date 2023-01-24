@@ -193,7 +193,8 @@ for i in range(hparams['n_epochs']):
                     new_mix = student_estimates[:, 0:1] + student_estimates[:, 1:]
                     new_mix_std = new_mix.std(-1, keepdim=True)
                     new_mix_mean = new_mix.mean(-1, keepdim=True)
-                    student_estimates = (student_estimates - new_mix_mean) / (new_mix_std + 1e-9)
+                    student_estimates = (student_estimates - student_estimates.mean(-1, keepdim=True)) / (
+                            student_estimates.std(-1, keepdim=True) + 1e-9)
                     s_est_speech = student_estimates[:, 0].detach().cpu().numpy()
 
                     # Parallelize the DNS-MOS computation.
