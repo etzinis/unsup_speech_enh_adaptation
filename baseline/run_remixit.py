@@ -27,11 +27,10 @@ import baseline.utils.mixture_consistency as mixture_consistency
 
 import baseline.models.improved_sudormrf as improved_sudormrf
 import baseline.metrics.dnnmos_metric as dnnmos_metric
-from multiprocessing import Pool
+from multiprocessing import Pool, Semaphore
 
 from asteroid.losses import pairwise_neg_sisdr
 from asteroid.losses import pairwise_neg_snr
-
 
 args = parser.get_args()
 hparams = vars(args)
@@ -267,7 +266,8 @@ for i in range(hparams['n_epochs']):
                     s_est_speech = student_estimates[:, 0].detach().cpu().numpy()
 
                     # Parallelize the DNS-MOS computation.
-                    with Pool(max(hparams['n_jobs'] // 4, 1)) as p:
+                    num_of_workers = max(os.cpu_count() // (hparams["n_jobs"] * 2), 1)
+                    with Pool(num_of_workers) as p:
                         args_list = [s_est_speech[b_ind]
                                      for b_ind in range(s_est_speech.shape[0])]
                         for dnsmos_values in p.map(compute_dnsmos_process, args_list):
