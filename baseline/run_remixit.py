@@ -124,8 +124,8 @@ for val_set in [x for x in generators if not x == 'train']:
 # Get initial teacher and student models
 student = get_new_student(hparams, depth_growth=1)
 teacher = get_new_student(hparams, depth_growth=1)
-if hparams["teacher_momentum"] > 1.:
-    raise ValueError("Teacher momentum should be in the range of (0, 1] but got: "
+if not 0. <= hparams["teacher_momentum"] <= 1.:
+    raise ValueError("Teacher momentum should be in the range of [0, 1] but got: "
                      f"{hparams['teacher_momentum']}")
 if hparams["initialize_student_from_checkpoint"]:
     # Initialize the student with the same checkpoint as the teacher.
@@ -161,23 +161,7 @@ for i in range(hparams['n_epochs']):
     # Figure out which student order is and replace teacher if needed
     if hparams["n_epochs_teacher_update"] is not None:
         update_needed = i // hparams["n_epochs_teacher_update"] + 1 > student_order
-        if update_needed and hparams["teacher_momentum"] > 0.:
-            # Exponential moving average protocol.
-            t_momentum = hparams["teacher_momentum"]
-            new_teacher_w = copy.deepcopy(teacher.state_dict())
-            student_w = student.state_dict()
-            for key in new_teacher_w.keys():
-                new_teacher_w[key] = (
-                        t_momentum * new_teacher_w[key] + (1.0 - t_momentum) * student_w[key])
-
-            teacher.load_state_dict(new_teacher_w)
-            del new_teacher_w
-            freeze_model(teacher)
-            print(f"Updated the teacher with EMA in the {student_order}-th student order.")
-            student_step = 1
-            student_order = i // hparams["n_epochs_teacher_update"]
-
-        elif i // hparams["n_epochs_teacher_update"] + 1 > student_order:
+        if update_needed and hparams["student_depth_growth"] > 1.:
             # Sequential teacher update protocol.
             # Replace old teacher with the newest student and update order
             del teacher
@@ -190,6 +174,22 @@ for i in range(hparams['n_epochs']):
             teacher = torch.nn.DataParallel(teacher).cuda()
             opt = torch.optim.Adam(student.parameters(), lr=hparams["learning_rate"])
             print(f"Replaced old teacher with latest student: {old_student_depth} -> {new_student_growth}")
+            student_step = 1
+            student_order = i // hparams["n_epochs_teacher_update"]
+
+        elif update_needed and hparams["teacher_momentum"] > 0.:
+            # Exponential moving average protocol.
+            t_momentum = hparams["teacher_momentum"]
+            new_teacher_w = copy.deepcopy(teacher.state_dict())
+            student_w = student.state_dict()
+            for key in new_teacher_w.keys():
+                new_teacher_w[key] = (
+                        t_momentum * new_teacher_w[key] + (1.0 - t_momentum) * student_w[key])
+
+            teacher.load_state_dict(new_teacher_w)
+            del new_teacher_w
+            freeze_model(teacher)
+            print(f"Updated the teacher with EMA in the {student_order}-th student order.")
             student_step = 1
             student_order = i // hparams["n_epochs_teacher_update"]
 
