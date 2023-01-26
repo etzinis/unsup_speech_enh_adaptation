@@ -96,6 +96,14 @@ def get_args():
     # ===============================================
     # Teacher / Student parameters in RemixIT
     parser.add_argument(
+        "--initialize_student_from_checkpoint",
+        action='store_true',
+        help="""When set RemixIT's student will get initialized from the same
+            checkpoint as the student. Needs to be used with momentum.""",
+        default=False,
+    )
+
+    parser.add_argument(
         "--teacher_momentum",
         type=float,
         help=""" If this is set to higher than 0, that means that RemixIT's

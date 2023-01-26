@@ -124,11 +124,11 @@ for val_set in [x for x in generators if not x == 'train']:
 # Get initial teacher and student models
 student = get_new_student(hparams, depth_growth=1)
 teacher = get_new_student(hparams, depth_growth=1)
-if hparams["teacher_momentum"] > 0.:
+if hparams["teacher_momentum"] > 1.:
+    raise ValueError("Teacher momentum should be in the range of (0, 1] but got: "
+                     f"{hparams['teacher_momentum']}")
+if hparams["initialize_student_from_checkpoint"]:
     # Initialize the student with the same checkpoint as the teacher.
-    if hparams["teacher_momentum"] > 1.:
-        raise ValueError("Teacher momentum should be in the range of (0, 1] but got: "
-                         f"{hparams['teacher_momentum']}")
     student.load_state_dict(torch.load(hparams["warmup_checkpoint"]))
 teacher.load_state_dict(torch.load(hparams["warmup_checkpoint"]))
 student = torch.nn.DataParallel(student).cuda()
