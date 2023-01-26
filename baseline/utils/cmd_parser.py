@@ -94,13 +94,16 @@ def get_args():
     )
 
     # ===============================================
-    # Teacher Student parameters
+    # Teacher / Student parameters in RemixIT
     parser.add_argument(
-        "--teacher_weight_momentum",
+        "--teacher_momentum",
         type=float,
-        help="""The momentum of the teacher weight model updates
+        help=""" If this is set to higher than 0, that means that RemixIT's
+        student needs to be the same as the teacher and get initialized from the same
+        checkpoint. A good value would be somewhere near the region of [0.9-0.99].
+        The momentum of the teacher weight model updates
         in the update of the form t_w = momentum * t_w + (1 - momentum) * s_w.""",
-        default=0.99,
+        default=0.,
     )
 
     parser.add_argument(
