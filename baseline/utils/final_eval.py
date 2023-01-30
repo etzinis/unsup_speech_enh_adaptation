@@ -138,7 +138,10 @@ if __name__ == "__main__":
         aggregate_results[k] = {'mean': mean_metric, 'median': median_metric, 'std': std_metric}
 
     pprint(aggregate_results)
-    model_name = os.path.basename(hparams['model_checkpoint'])
+    if hparams["evaluate_only_input_mixture"]:
+        model_name = 'unprocessed'
+    else:
+        model_name = os.path.basename(hparams['model_checkpoint'])
     if hparams['save_results_dir'] is None:
         save_path = os.path.join('/tmp', model_name + '_full_eval_results_v2.pkl')
     else:
