@@ -77,6 +77,7 @@ if __name__ == "__main__":
             "bak_mos": [],
             "ovr_mos": [],
     }
+    gen_len = len(test_generator)
     with torch.no_grad():
         for j, mixture in test_tqdm_gen:
             file_length = mixture.shape[-1]
@@ -104,7 +105,7 @@ if __name__ == "__main__":
             bak_mos_avg = round(np.mean(res_dic["bak_mos"]), 2)
             sig_mos_avg = round(np.mean(res_dic["sig_mos"]), 2)
             test_tqdm_gen.set_description(
-                f"Avg OVRL MOS: {ovrl_mos_avg}, BAK: {bak_mos_avg}, SIG: {sig_mos_avg}")
+                f"Avg OVRL MOS: {ovrl_mos_avg}, BAK: {bak_mos_avg}, SIG: {sig_mos_avg} {j}/{gen_len}")
 
     aggregate_results = {}
     for k, values in res_dic.items():
