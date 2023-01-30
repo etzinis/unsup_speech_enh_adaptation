@@ -103,8 +103,8 @@ if __name__ == "__main__":
 
             s_est_speech = student_estimates[0, 0, :file_length].detach().cpu().numpy()
             if hparams["normalize_with_max_absolute_value"]:
-                s_est_speech /= np.abs(s_est_speech - s_est_speech.mean(-1, keepdims=True)).max(
-                    -1, keepdims=True) + 1e-9
+                s_est_speech -= s_est_speech.mean(-1, keepdims=True)
+                s_est_speech /= np.abs(s_est_speech).max(-1, keepdims=True) + 1e-9
             else:
                 s_est_speech = (s_est_speech - s_est_speech.mean(-1, keepdims=True)) / (
                         s_est_speech.std(-1, keepdims=True) + 1e-9)
