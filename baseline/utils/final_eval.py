@@ -106,9 +106,6 @@ if __name__ == "__main__":
             test_tqdm_gen.set_description(
                 f"Avg OVRL MOS: {ovrl_mos_avg}, BAK: {bak_mos_avg}, SIG: {sig_mos_avg}")
 
-            if j > 1000:
-                break
-
     aggregate_results = {}
     for k, values in res_dic.items():
         mean_metric = np.mean(values)
