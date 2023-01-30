@@ -42,6 +42,12 @@ def get_args():
         help="""Whether to normalize all audio files to [-1, 1] range.""",
         default=False,
     )
+    parser.add_argument(
+        "--evaluate_only_input_mixture",
+        action="store_true",
+        help="""Whether to use the input mixture instead of a .""",
+        default=False,
+    )
     return parser.parse_args()
 
 
@@ -74,9 +80,12 @@ if __name__ == "__main__":
     args = get_args()
     hparams = vars(args)
     test_generator = get_chime_generator()
-    model = load_sudo_rm_rf_model(hparams['model_checkpoint'])
-    model = model.cuda()
-    model.eval()
+    if not hparams["evaluate_only_input_mixture"]:
+        model = load_sudo_rm_rf_model(hparams['model_checkpoint'])
+        model = model.cuda()
+        model.eval()
+    else:
+        model = None
     test_tqdm_gen = tqdm(enumerate(test_generator), desc='Eval on 16kHz chime 1 speaker')
     res_dic = {
             "sig_mos": [],
@@ -86,22 +95,26 @@ if __name__ == "__main__":
     gen_len = len(test_generator)
     with torch.no_grad():
         for j, mixture in test_tqdm_gen:
-            file_length = mixture.shape[-1]
-            min_k = int(np.ceil(np.log2(file_length/16000)))
-            padded_length = 2**max(min_k, 1) * 16000
+            if hparams["evaluate_only_input_mixture"]:
+                s_est_speech = mixture[0].cpu().numpy()
+            else:
+                file_length = mixture.shape[-1]
+                min_k = int(np.ceil(np.log2(file_length/16000)))
+                padded_length = 2**max(min_k, 1) * 16000
 
-            input_mix = torch.zeros((1, padded_length), dtype=mixture.dtype)
-            input_mix[..., :file_length] = mixture
+                input_mix = torch.zeros((1, padded_length), dtype=mixture.dtype)
+                input_mix[..., :file_length] = mixture
 
-            input_mix = input_mix.unsqueeze(1).cuda()
-            input_mix_std = input_mix.std(-1, keepdim=True)
-            input_mix_mean = input_mix.mean(-1, keepdim=True)
-            input_mix = (input_mix - input_mix_mean) / (input_mix_std + 1e-9)
+                input_mix = input_mix.unsqueeze(1).cuda()
+                input_mix_std = input_mix.std(-1, keepdim=True)
+                input_mix_mean = input_mix.mean(-1, keepdim=True)
+                input_mix = (input_mix - input_mix_mean) / (input_mix_std + 1e-9)
 
-            student_estimates = model(input_mix)
-            student_estimates = mixture_consistency.apply(student_estimates, input_mix)
+                student_estimates = model(input_mix)
+                student_estimates = mixture_consistency.apply(student_estimates, input_mix)
 
-            s_est_speech = student_estimates[0, 0, :file_length].detach().cpu().numpy()
+                s_est_speech = student_estimates[0, 0, :file_length].detach().cpu().numpy()
+
             if hparams["normalize_with_max_absolute_value"]:
                 s_est_speech -= s_est_speech.mean(-1, keepdims=True)
                 s_est_speech /= np.abs(s_est_speech).max(-1, keepdims=True) + 1e-9
