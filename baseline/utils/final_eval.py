@@ -36,6 +36,12 @@ def get_args():
         help="""The absolute path for saving the full eval results file.""",
         default=None,
     )
+    parser.add_argument(
+        "--normalize_with_max_absolute_value",
+        action="store_true",
+        help="""Whether to normalize all audio files to [-1, 1] range.""",
+        default=False,
+    )
     return parser.parse_args()
 
 
@@ -96,8 +102,11 @@ if __name__ == "__main__":
             student_estimates = mixture_consistency.apply(student_estimates, input_mix)
 
             s_est_speech = student_estimates[0, 0, :file_length].detach().cpu().numpy()
-            s_est_speech = (s_est_speech - s_est_speech.mean(-1, keepdims=True)) / (
-                    s_est_speech.std(-1, keepdims=True) + 1e-9)
+            if hparams["normalize_with_max_absolute_value"]:
+                s_est_speech /= np.abs(s_est_speech).max(-1, keepdims=True) + 1e-9
+            else:
+                s_est_speech = (s_est_speech - s_est_speech.mean(-1, keepdims=True)) / (
+                        s_est_speech.std(-1, keepdims=True) + 1e-9)
             dnsmos_res_dic = dnnmos_metric.compute_dnsmos(s_est_speech, fs=16000)
             for k, v in dnsmos_res_dic.items():
                 res_dic[k].append(v)
@@ -117,9 +126,9 @@ if __name__ == "__main__":
     pprint(aggregate_results)
     model_name = os.path.basename(hparams['model_checkpoint'])
     if hparams['save_results_dir'] is None:
-        save_path = os.path.join('/tmp', model_name + '_full_eval_results.pkl')
+        save_path = os.path.join('/tmp', model_name + '_full_eval_results_v2.pkl')
     else:
-        save_path = os.path.join(hparams['save_results_dir'], model_name + '_full_eval_results.pkl')
+        save_path = os.path.join(hparams['save_results_dir'], model_name + '_full_eval_results_v2.pkl')
 
     with open(save_path, 'wb') as handle:
         pickle.dump(aggregate_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
