@@ -1,7 +1,23 @@
 # Unsupervised domain adaptation for speech enhancement with RemixIT
 CHiME 2023 task: Unsupervised domain adaptation for conversational speech enhancement baseline
 
-We pre-train a supervised Sudo rm- rf [1] teacher on some out-of-domain data (e.g. Libri1to3mix) and try to adapt a student model with the RemixIT [2] method on the unlabeled CHiME data.
+We pre-train a supervised Sudo rm- rf [1, 2] teacher on some out-of-domain data (e.g. Libri1to3mix) and try to adapt a student model with the RemixIT [3] method on the unlabeled CHiME data.
+
+### Results on single-speaker segments of the CHiME-5 dataset
+
+|                        Mean                          | OVR_MOS | BAK_MOS | SIG_MOS |
+| ---------------------------------------------------- | ------- | ------- | ------- |
+| unprocessed                                          |    2.12     |      0.44   |  **3.50**       |
+| Sudo rm -rf (fully-supervised out-of-domain teacher) |     2.32    |   1.53      |   3.49      |
+| RemixIT (self-supervised student)                    |       2.44  |    **2.10**     |   3.39      |
+| RemixIT (self-supervised student) using VAD          |    **2.46**     |   2.09      |    3.40      |
+
+|                        Median                         | OVR_MOS | BAK_MOS | SIG_MOS |
+| ---------------------------------------------------- | ------- | ------- | ------- |
+| unprocessed                                          |    2.11     |      0.38   |  **3.52**       |
+| Sudo rm -rf (fully-supervised out-of-domain teacher) |     2.30    |   1.51      |   **3.52**      |
+| RemixIT (self-supervised student)                    |     2.36    |   **2.25**      |   3.42      |
+| RemixIT (self-supervised student) using VAD          |    **2.41**     |   2.21      |    3.40      |
 
 ## Table of contents
 
@@ -10,6 +26,7 @@ We pre-train a supervised Sudo rm- rf [1] teacher on some out-of-domain data (e.
 - [How to train the supervised teacher](#how-to-train-the-supervised-teacher)
 - [How to adapt the RemixIT student](#how-to-adapt-the-remixit-student)
 - [How to load a pretrained checkpoint](#how-to-load-a-pretrained-checkpoint)
+- [How to evaluate a checkpoint](#how-to-evaluate-a-checkpoint)
 - [References](#references)
 
 ## Datasets generation
@@ -121,9 +138,18 @@ estimates = model(input_mix)
 estimates = mixture_consistency.apply(estimates, input_mix)
 ```
 
+## How to evaluate a checkpoint
+If you want to perform full evaluation of a pre-trained checkpoint simply use our script: 
+```shell
+cd {the path that you stored the github repo}/baseline/utils
+python -Wignore final_eval.py --model_checkpoint ../../pretrained_checkpoints/remixit_chime_adapted_student_bestbak_ep85_using_vad.pt  --save_results_dir ./
+```
+
 
 ## References
 
-[1] Tzinis, E., Wang, Z., Jiang, X., and Smaragdis, P., “Compute and memory efficient universal sound source separation.” In Journal of Signal Processing Systems, vol. 9, no. 2, pp. 245–259, 2022, Springer.
+[1] Tzinis, E., Wang, Z., & Smaragdis, P. (2020, September). Sudo rm-rf: Efficient networks for universal audio source separation. In 2020 IEEE 30th International Workshop on Machine Learning for Signal Processing (MLSP). <https://arxiv.org/abs/2007.06833>
 
-[2] Tzinis, E., Adi, Y., Ithapu, V. K., Xu, B., Smaragdis, P., and Kumar, A., “RemixIT: Continual Self-Training of Speech Enhancement Models via Bootstrapped Remixing.” In IEEE Journal of Selected Topics in Signal Processing, vol. 16, no. 6, pp. 1329–1341, 2022, IEEE.
+[2] Tzinis, E., Wang, Z., Jiang, X., and Smaragdis, P., Compute and memory efficient universal sound source separation. In Journal of Signal Processing Systems, vol. 9, no. 2, pp. 245–259, 2022, Springer. <https://arxiv.org/pdf/2103.02644.pdf>
+
+[3] Tzinis, E., Adi, Y., Ithapu, V. K., Xu, B., Smaragdis, P., & Kumar, A. (October, 2022). RemixIT: Continual self-training of speech enhancement models via bootstrapped remixing. In IEEE Journal of Selected Topics in Signal Processing. <https://arxiv.org/abs/2202.08862>
