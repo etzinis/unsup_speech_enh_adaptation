@@ -1,4 +1,4 @@
-# unsup_speech_enh_adaptation
+# Unsupervised domain adaptation for speech enhancement with RemixIT
 CHiME 2023 task: Unsupervised domain adaptation for conversational speech enhancement baseline
 
 We pre-train a supervised Sudo rm- rf [1] teacher on some out-of-domain data (e.g. Libri1to3mix) and try to adapt a student model with the RemixIT [2] method on the unlabeled CHiME data.
