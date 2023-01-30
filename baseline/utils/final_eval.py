@@ -41,7 +41,7 @@ def get_args():
 
 def get_chime_generator():
     data_loader = chime.Dataset(
-        sample_rate=16000, fixed_n_sources=-1,
+        sample_rate=16000, fixed_n_sources=1,
         timelength=-1., augment=False, use_vad=False,
         zero_pad=False, split='eval', get_only_active_speakers=False,
         normalize_audio=False, n_samples=-1)
