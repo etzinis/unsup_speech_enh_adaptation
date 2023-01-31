@@ -145,9 +145,9 @@ if __name__ == "__main__":
     else:
         model_name = os.path.basename(hparams['model_checkpoint'])
     if hparams['save_results_dir'] is None:
-        save_path = os.path.join('/tmp', model_name + '_full_eval_results_v2.pkl')
+        save_path = os.path.join('/tmp', model_name + '_full_eval_results_v3.pkl')
     else:
-        save_path = os.path.join(hparams['save_results_dir'], model_name + '_full_eval_results_v2.pkl')
+        save_path = os.path.join(hparams['save_results_dir'], model_name + '_full_eval_results_v3.pkl')
 
     with open(save_path, 'wb') as handle:
         pickle.dump(aggregate_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
