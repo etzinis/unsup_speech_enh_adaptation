@@ -95,6 +95,8 @@ if __name__ == "__main__":
     gen_len = len(test_generator)
     with torch.no_grad():
         for j, mixture in test_tqdm_gen:
+            np_mixture_mean = mixture[0].mean(-1)
+            np_mixture_std = mixture[0].std(-1)
             if hparams["evaluate_only_input_mixture"]:
                 s_est_speech = mixture[0].cpu().numpy()
             else:
@@ -116,11 +118,11 @@ if __name__ == "__main__":
                 s_est_speech = student_estimates[0, 0, :file_length].detach().cpu().numpy()
 
             if hparams["normalize_with_max_absolute_value"]:
-                s_est_speech -= s_est_speech.mean(-1, keepdims=True)
-                s_est_speech /= np.abs(s_est_speech).max(-1, keepdims=True) + 1e-9
+                s_est_speech -= s_est_speech.mean(-1)
+                s_est_speech /= np.abs(s_est_speech).max(-1) + 1e-9
             else:
-                s_est_speech = (s_est_speech - s_est_speech.mean(-1, keepdims=True)) / (
-                        s_est_speech.std(-1, keepdims=True) + 1e-9)
+                s_est_speech = (s_est_speech - s_est_speech.mean(-1)) / (s_est_speech.std(-1) + 1e-9)
+                s_est_speech = (s_est_speech * np_mixture_std) + np_mixture_mean
             dnsmos_res_dic = dnnmos_metric.compute_dnsmos(s_est_speech, fs=16000)
             for k, v in dnsmos_res_dic.items():
                 res_dic[k].append(v)
