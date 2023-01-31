@@ -95,8 +95,8 @@ if __name__ == "__main__":
     gen_len = len(test_generator)
     with torch.no_grad():
         for j, mixture in test_tqdm_gen:
-            np_mixture_mean = mixture[0].mean(-1)
-            np_mixture_std = mixture[0].std(-1)
+            np_mixture_mean = mixture[0].cpu().numpy().mean(-1)
+            np_mixture_std = mixture[0].cpu().numpy()..std(-1)
             if hparams["evaluate_only_input_mixture"]:
                 s_est_speech = mixture[0].cpu().numpy()
             else:
