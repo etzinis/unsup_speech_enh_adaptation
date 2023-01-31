@@ -1,12 +1,14 @@
 """!
 @brief Final evaluation of a pre-trained checkpoint model on the CHiME-5 and LibriCHiME-5 data.
 @author Efthymios Tzinis {etzinis2@illinois.edu}
+@author Mostafa Sadeghi {mostafa.sadeghi@inria.fr}
 @copyright University of Illinois at Urbana-Champaign
 """
 
 import argparse
 import torch
 import numpy as np
+import pyloudnorm as pyln
 
 from tqdm import tqdm
 from pprint import pprint
@@ -47,6 +49,12 @@ def get_args():
         help="""Whether to evaluate on the input mixture only.""",
         default=False,
     )
+    parser.add_argument(
+        "--unnormalize_with_mixture_statistics",
+        action="store_true",
+        help="""Whether to unnormalize estimated speech before giving to DNS-MOS.""",
+        default=False,
+    )
     return parser.parse_args()
 
 
@@ -85,6 +93,8 @@ def load_sudo_rm_rf_model(path):
 
 
 if __name__ == "__main__":
+    fs = 16000
+    meter = pyln.Meter(fs)
     args = get_args()
     hparams = vars(args)
     if hparams['dataset'] == 'chime':
@@ -138,10 +148,15 @@ if __name__ == "__main__":
 
                 s_est_speech = student_estimates[0, 0, :file_length]
 
-                s_est_speech = s_est_speech * (input_mix_std + 1e-9) + input_mix_mean
+                if hparams['unnormalize_with_mixture_statistics']:
+                    s_est_speech = s_est_speech * (input_mix_std + 1e-9) + input_mix_mean
                 
                 s_est_speech = s_est_speech.detach().cpu().numpy().squeeze()
                 
+            # Loudness normalization:
+            loudness = meter.integrated_loudness(s_est_speech)
+            s_est_speech = pyln.normalize.loudness(s_est_speech, loudness, -18.0)
+            
             dnsmos_res_dic = dnnmos_metric.compute_dnsmos(s_est_speech, fs=16000)
             for k, v in dnsmos_res_dic.items():
                 res_dic[k].append(v)
@@ -164,9 +179,9 @@ if __name__ == "__main__":
     else:
         model_name = os.path.basename(hparams['model_checkpoint'])
     if hparams['save_results_dir'] is None:
-        save_path = os.path.join('/tmp', model_name + '_full_eval_' + hparams['dataset'] + '_results.pkl')
+        save_path = os.path.join('/tmp', model_name + '_full_eval_' + hparams['dataset'] + '_results_v2.pkl')
     else:
-        save_path = os.path.join(hparams['save_results_dir'], model_name + '_full_eval_' + hparams['dataset'] + '_results.pkl')
+        save_path = os.path.join(hparams['save_results_dir'], model_name + '_full_eval_' + hparams['dataset'] + '_results_v2.pkl')
 
     with open(save_path, 'wb') as handle:
         pickle.dump(aggregate_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
