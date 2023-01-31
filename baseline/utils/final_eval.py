@@ -37,6 +37,13 @@ def get_args():
         default=None,
     )
     parser.add_argument(
+        "--dataset_split",
+        type=str,
+        help="""The dataset split name for the CHiME data.""",
+        default='eval',
+        choices=['eval', 'dev']
+    )
+    parser.add_argument(
         "--normalize_with_max_absolute_value",
         action="store_true",
         help="""Whether to normalize all audio files to [-1, 1] range.""",
@@ -51,11 +58,11 @@ def get_args():
     return parser.parse_args()
 
 
-def get_chime_generator():
+def get_chime_generator(dataset_split):
     data_loader = chime.Dataset(
         sample_rate=16000, fixed_n_sources=1,
         timelength=-1., augment=False, use_vad=False,
-        zero_pad=False, split='eval', get_only_active_speakers=False,
+        zero_pad=False, split=dataset_split, get_only_active_speakers=False,
         normalize_audio=False, n_samples=-1)
     return data_loader.get_generator(batch_size=1, num_workers=1)
 
@@ -79,7 +86,7 @@ def load_sudo_rm_rf_model(path):
 if __name__ == "__main__":
     args = get_args()
     hparams = vars(args)
-    test_generator = get_chime_generator()
+    test_generator = get_chime_generator(hparams['dataset_split'])
     if not hparams["evaluate_only_input_mixture"]:
         model = load_sudo_rm_rf_model(hparams['model_checkpoint'])
         model = model.cuda()
@@ -145,9 +152,11 @@ if __name__ == "__main__":
     else:
         model_name = os.path.basename(hparams['model_checkpoint'])
     if hparams['save_results_dir'] is None:
-        save_path = os.path.join('/tmp', model_name + '_full_eval_results_v3.pkl')
+        save_path = os.path.join('/tmp',
+                                 model_name + f'_full_eval_results_{hparams["dataset_split"]}.pkl')
     else:
-        save_path = os.path.join(hparams['save_results_dir'], model_name + '_full_eval_results_v3.pkl')
+        save_path = os.path.join(hparams['save_results_dir'],
+                                 model_name + f'_full_eval_results_{hparams["dataset_split"]}.pkl')
 
     with open(save_path, 'wb') as handle:
         pickle.dump(aggregate_results, handle, protocol=pickle.HIGHEST_PROTOCOL)
