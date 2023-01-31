@@ -154,7 +154,7 @@ If you want to perform full evaluation of a pre-trained checkpoint simply use ou
 ```shell
 cd {the path that you stored the github repo}/baseline/utils
 python -Wignore final_eval.py --model_checkpoint ../../pretrained_checkpoints/remixit_chime_adapted_student_bestbak_ep85_using_vad.pt \
---save_results_dir ./ --normalize_with_max_absolute_value
+--save_results_dir ./ --normalize_with_max_absolute_value --dataset_split eval
 ```
 
 
