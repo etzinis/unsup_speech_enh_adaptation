@@ -4,9 +4,6 @@
 @copyright University of Illinois at Urbana-Champaign
 """
 
-import os, sys 
-sys.path.append("../")
-
 import argparse
 import torch
 import numpy as np
@@ -101,7 +98,7 @@ if __name__ == "__main__":
         
     if not hparams['evaluate_only_input_mixture']:
         model = load_sudo_rm_rf_model(hparams['model_checkpoint'])
-        # model = model.cuda()
+        model = model.cuda()
         model.eval()
     else:
         model = None
@@ -131,7 +128,7 @@ if __name__ == "__main__":
                 input_mix = torch.zeros((1, padded_length), dtype=mixture.dtype)
                 input_mix[..., :file_length] = mixture
 
-                input_mix = input_mix.unsqueeze(1) #.cuda()
+                input_mix = input_mix.unsqueeze(1).cuda()
                 input_mix_std = input_mix.std(-1, keepdim=True)
                 input_mix_mean = input_mix.mean(-1, keepdim=True)
                 input_mix = (input_mix - input_mix_mean) / (input_mix_std + 1e-9)
