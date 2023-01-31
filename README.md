@@ -105,6 +105,21 @@ python -Wignore run_remixit.py --train chime --val chime libri1to3chime --test l
 --n_jobs 12 -cad 2 3 -bs 24
 ```
 
+If you want to use a sequentially updated teacher instead of EMA:
+```shell
+cd {the path that you stored the github repo}/baseline
+python -Wignore run_remixit.py --train chime --val chime libri1to3chime --test libri1to3mix \
+-fs 16000 --enc_kernel_size 81 --num_blocks 8 --out_channels 256 --divide_lr_by 3. \
+--student_depth_growth 1 --n_epochs_teacher_update 10 --teacher_momentum 0.0 \
+--upsampling_depth 7 --patience 15 --learning_rate 0.0001 -tags remixit student allData \
+--n_epochs 100 --project_name uchime_baseline_v3 --clip_grad_norm 5.0 --audio_timelength 8.0 \
+--min_or_max min --max_num_sources 2 --save_models_every 1 --initialize_student_from_checkpoint \
+--checkpoint_storage_path /home/thymios/UCHIME_checkpoints \
+--warmup_checkpoint ../pretrained_checkpoints/libri1to3mix_supervised_teacher_w_mixconsist.pt \
+--checkpoint_storage_path {insert_path_to_save_models} --log_audio --apply_mixture_consistency \
+--n_jobs 12 -cad 2 3 -bs 24
+```
+
 ## How to load a pretrained checkpoint
 ```python
 import baseline.utils.mixture_consistency as mixture_consistency
