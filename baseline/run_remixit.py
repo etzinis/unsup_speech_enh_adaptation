@@ -283,12 +283,10 @@ for i in range(hparams['n_epochs']):
                     student_estimates = student(input_mix)
                     student_estimates = apply_output_transform(
                         student_estimates, input_mix_std, input_mix_mean, input_mix, hparams)
-                    new_mix = student_estimates[:, 0:1] + student_estimates[:, 1:]
-                    new_mix_std = new_mix.std(-1, keepdim=True)
-                    new_mix_mean = new_mix.mean(-1, keepdim=True)
-                    student_estimates = (student_estimates - student_estimates.mean(-1, keepdim=True)) / (
-                            student_estimates.std(-1, keepdim=True) + 1e-9)
+
                     s_est_speech = student_estimates[:, 0].detach().cpu().numpy()
+                    s_est_speech -= s_est_speech.mean(-1, keepdims=True)
+                    s_est_speech /= np.abs(s_est_speech).max(-1, keepdims=True) + 1e-9
 
                     # Parallelize the DNS-MOS computation.
                     num_of_workers = max(os.cpu_count() // (hparams["n_jobs"] * 2), 1)
