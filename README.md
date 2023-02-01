@@ -3,7 +3,7 @@ CHiME 2023 task: Unsupervised domain adaptation for conversational speech enhanc
 
 We pre-train a supervised Sudo rm- rf [1, 2] teacher on some out-of-domain data (e.g. Libri1to3mix) and try to adapt a student model with the RemixIT [3] method on the unlabeled CHiME data.
 
-### Results under mean aggregation on single-speaker segments of the CHiME-5 test dataset - 3130 files.
+### Results under mean aggregation on single-speaker segments of the CHiME-5 dev dataset - 5719 files.
 We use peak normalization at the waveform which needs to be evaluated). OOD stands for out-of-domain, EMA stands for expontially moving average teacher and SU stands for the sequentially updated teacher model. VAD annotations means that the model was adapted using only the CHiME training data where the output of the VAD corresponds to at least one speaker active.
 
 |                        Method                          | OVR_MOS | BAK_MOS | SIG_MOS | [Checkpoint](https://github.com/etzinis/unsup_speech_enh_adaptation/tree/main/pretrained_checkpoints) |
