@@ -3,16 +3,16 @@ CHiME 2023 task: Unsupervised domain adaptation for conversational speech enhanc
 
 We pre-train a supervised Sudo rm- rf [1, 2] teacher on some out-of-domain data (e.g. Libri1to3mix) and try to adapt a student model with the RemixIT [3] method on the unlabeled CHiME data.
 
-### Results under mean aggregation on single-speaker segments of the CHiME-5 test dataset - 3130 files.
+### Results under mean aggregation on single-speaker segments of the CHiME-5 dev dataset - 5719 files.
 We use peak normalization at the waveform which needs to be evaluated). OOD stands for out-of-domain, EMA stands for expontially moving average teacher and SU stands for the sequentially updated teacher model. VAD annotations means that the model was adapted using only the CHiME training data where the output of the VAD corresponds to at least one speaker active.
 
 |                        Method                          | OVR_MOS | BAK_MOS | SIG_MOS | [Checkpoint](https://github.com/etzinis/unsup_speech_enh_adaptation/tree/main/pretrained_checkpoints) |
 | ---------------------------------------------------- | ------- | ------- | ------- | --------- |
-| unprocessed                                          |  2.73   |     2.35  |   **3.64**    | |
-| Sudo rm -rf (fully-supervised OOD teacher) |   2.81    |   3.25   |   3.46    | ```libri1to3mix_supervised_teacher_w_mixconsist.pt```
-| RemixIT (self-supervised student with SU teacher |   **2.83**   |   3.28   |  3.43    | ```remixit_chime_adapted_student_sequentially_updated_teacher_ep_33.py```
-| RemixIT (self-supervised student with EMA teacher |    2.75   |   **3.35**   |   3.30   | ```remixit_chime_adapted_student_besmos_ep35.pt```
-| RemixIT (self-supervised student with EMA teacher) + VAD annotations    |    2.78   |   **3.35**    |   3.33    | ```remixit_chime_adapted_student_bestbak_ep85_using_vad.pt```
+| unprocessed                                          |  2.84   |     2.40  |   **3.79**    | |
+| Sudo rm -rf (fully-supervised OOD teacher) |   3.01    |   3.47   |   3.60    | ```libri1to3mix_supervised_teacher_w_mixconsist.pt```
+| RemixIT (self-supervised student with SU teacher |   **3.06**   |   3.52   |  3.60    | ```remixit_chime_adapted_student_sequentially_updated_teacher_ep_33.py```
+| RemixIT (self-supervised student with EMA teacher |    2.98   |   3.56   |   3.47   | ```remixit_chime_adapted_student_besmos_ep35.pt```
+| RemixIT (self-supervised student with EMA teacher) + VAD annotations    |    3.02   |   **3.59**    |   3.51    | ```remixit_chime_adapted_student_bestbak_ep85_using_vad.pt```
 
 
 ## Table of contents
@@ -154,7 +154,7 @@ If you want to perform full evaluation of a pre-trained checkpoint simply use ou
 ```shell
 cd {the path that you stored the github repo}/baseline/utils
 python -Wignore final_eval.py --model_checkpoint ../../pretrained_checkpoints/remixit_chime_adapted_student_bestbak_ep85_using_vad.pt \
---save_results_dir ./ --normalize_with_max_absolute_value
+--save_results_dir ./ --normalize_with_max_absolute_value --dataset_split eval
 ```
 
 
