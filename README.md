@@ -122,6 +122,7 @@ python -Wignore run_remixit.py --train chime --val chime libri1to3chime --test l
 
 ## How to load a pretrained checkpoint
 ```python
+import torch
 import baseline.utils.mixture_consistency as mixture_consistency
 import baseline.models.improved_sudormrf as improved_sudormrf
 
@@ -139,8 +140,9 @@ model.load_state_dict(torch.load('.../unsup_speech_enh_adaptation/pretrained_che
 model = torch.nn.DataParallel(model).cuda()
 
 # Scale the input mixture, perform inference and apply mixture consistency
+input_mix = torch.rand(2, 1, 24567) # input_mix.shape = (batch, 1, time_samples)
 input_mix = input_mix.unsqueeze(1).cuda() 
-# input_mix.shape = (batch, 1, time_samples)
+
 input_mix_std = input_mix.std(-1, keepdim=True)
 input_mix_mean = input_mix.mean(-1, keepdim=True)
 input_mix = (input_mix - input_mix_mean) / (input_mix_std + 1e-9)
