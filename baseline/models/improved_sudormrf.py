@@ -251,10 +251,7 @@ class SuDORMRF(nn.Module):
         self.num_sources = num_sources
 
         # Appropriate padding is needed for arbitrary lengths
-        self.lcm = abs(self.enc_kernel_size // 2 * 2 **
-                       self.upsampling_depth) // math.gcd(
-                       self.enc_kernel_size // 2,
-                       2 ** self.upsampling_depth)
+        self.n_least_samples_req = self.enc_kernel_size // 2 * 2 ** self.upsampling_depth
 
         # Front end
         self.encoder = nn.Conv1d(in_channels=1, out_channels=enc_num_basis,
@@ -262,7 +259,7 @@ class SuDORMRF(nn.Module):
                                  stride=enc_kernel_size // 2,
                                  padding=enc_kernel_size // 2,
                                  bias=False)
-        torch.nn.init.xavier_uniform(self.encoder.weight)
+        torch.nn.init.xavier_uniform_(self.encoder.weight)
 
         # Norm before the rest, and apply one more dense layer
         self.ln = GlobLN(enc_num_basis)
@@ -290,7 +287,7 @@ class SuDORMRF(nn.Module):
             stride=enc_kernel_size // 2,
             padding=enc_kernel_size // 2,
             groups=1, bias=False)
-        torch.nn.init.xavier_uniform(self.decoder.weight)
+        torch.nn.init.xavier_uniform_(self.decoder.weight)
         self.mask_nl_class = nn.ReLU()
     # Forward pass
     def forward(self, input_wav):
@@ -314,16 +311,17 @@ class SuDORMRF(nn.Module):
         return self.remove_trailing_zeros(estimated_waveforms, input_wav)
 
     def pad_to_appropriate_length(self, x):
-        values_to_pad = int(x.shape[-1]) % self.lcm
-        if values_to_pad:
-            appropriate_shape = x.shape
-            padded_x = torch.zeros(
-                list(appropriate_shape[:-1]) +
-                [appropriate_shape[-1] + self.lcm - values_to_pad],
-                dtype=torch.float32)
-            padded_x[..., :x.shape[-1]] = x
-            return padded_x.to(x.device)
-        return x
+        input_length = x.shape[-1]
+        if input_length < self.n_least_samples_req:
+            values_to_pad = self.n_least_samples_req
+        else:
+            res = 1 if input_length % self.n_least_samples_req else 0
+            least_number_of_pads = input_length // self.n_least_samples_req
+            values_to_pad = (least_number_of_pads + res) * self.n_least_samples_req
+
+        padded_x = torch.zeros(list(x.shape[:-1]) + [values_to_pad], dtype=torch.float32)
+        padded_x[..., :x.shape[-1]] = x
+        return padded_x.to(x.device)
 
     @staticmethod
     def remove_trailing_zeros(padded_x, initial_x):
@@ -335,14 +333,16 @@ if __name__ == "__main__":
                      in_channels=512,
                      num_blocks=16,
                      upsampling_depth=8,
-                     enc_kernel_size=21,
+                     enc_kernel_size=81,
                      enc_num_basis=512,
                      num_sources=2)
 
-    dummy_input = torch.rand(3, 1, 31079)
-    estimated_sources = model(dummy_input)
-    print(estimated_sources.shape)
-
-
+    import numpy as np
+    for j in range(5):
+        input_shape = int(np.random.randint(42, high=32563))
+        dummy_input = torch.rand(1, 1, input_shape)
+        estimated_sources = model(dummy_input)
+        assert estimated_sources.shape[-1] == estimated_sources.shape[-1]
+        print(f"Shapes match last dimension: {estimated_sources.shape} {estimated_sources.shape}")
 
 
