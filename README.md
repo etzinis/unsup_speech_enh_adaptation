@@ -36,12 +36,12 @@ cd LibriMix
 ./generate_librimix.sh storage_dir
 ```
 
-For the generation of the CHiME data follow the instructions [here](https://github.com/UDASE-CHiME2023/unlabeled_data) or just follow these steps (this step requires the existence of CHiME-5 data under some path, [apply-and-get-CHiME5-here](https://chimechallenge.github.io/chime6/download.html)):
+For the generation of the CHiME data follow the instructions [here](https://github.com/UDASE-CHiME2023/CHiME-5) or just follow these steps (this step requires the existence of CHiME-5 data under some path, [apply-and-get-CHiME5-here](https://chimechallenge.github.io/chime6/download.html)):
 ```shell
 cd {path_to_generate_CHiME_processed_data}
 # clone data repository
 git clone https://github.com/UDASE-CHiME2023/data.git
-cd unlabeled_data
+cd CHiME-5
 
 # create CHiME conda environment
 conda env create -f environment.yml
